@@ -1,0 +1,53 @@
+function init_i2c_display()
+     sda = 3 -- NodeMCU D3
+     scl = 4 -- NodeMCU D4
+     sla = 0x3c
+     i2c.setup(0, sda, scl, i2c.SLOW)
+     disp = u8g.ssd1306_128x64_i2c(sla)
+end
+
+-- Change the display every 25 updates to reduce burn-in
+if (counter == 25) then
+    offset = -3
+elseif (counter == 26) then
+    offset = 3
+elseif (counter == 27) then
+    counter = 0
+    offset = 0
+end
+
+-- Bitmaps stored as strings for logos/symbols. Created using GIMP saving as XBM.
+eurosym = string.char(0x80, 0x0f, 0xc0, 0x1f, 0xe0, 0x3d, 0x70, 0x70, 0x38, 0x60, 0xfe, 0x07, 0xfe, 0x07, 0x18, 0x00, 0x18, 0x00, 0xfe, 0x07, 0xfe, 0x07, 0x38, 0x60, 0x70, 0x70, 0xf0, 0x78, 0xe0, 0x3f, 0x80, 0x0f);
+btclogo = string.char(0x60, 0x01, 0x60, 0x01, 0xe8, 0x03, 0xfc, 0x0f, 0x70, 0x1e, 0x70, 0x1c, 0x70, 0x1c, 0xf0, 0x0f, 0xf0, 0x1e, 0x70, 0x38, 0x70, 0x38, 0x70, 0x1e, 0xfc, 0x1f, 0xf8, 0x03, 0x60, 0x01, 0x60, 0x01);
+xmrlogo = string.char(0xe0, 0x07, 0x18, 0x18, 0x04, 0x20, 0x02, 0x40, 0x0a, 0x50, 0x19, 0x98, 0x39, 0x9c, 0x79, 0x9e, 0xf9, 0x9f, 0xd9, 0x9b, 0x9f, 0xf9, 0x1e, 0x78, 0x02, 0x40, 0x04, 0x30, 0x18, 0x18, 0xe0, 0x07);
+
+function drawscreen()
+     disp:setFont(u8g.font_fub17)
+     disp:drawStr( 17+offset, 16, "/  :")
+     disp:drawStr( 50+offset, 17, btcrate)
+     disp:drawStr( 17+offset, 48, "/  :")
+     disp:drawStr( 50+offset, 48, xmrrate)
+     disp:setFont(u8g.font_6x10)
+     disp:drawStr( 3+offset, 28, btcchange)
+     disp:drawStr( 3+offset, 60, xmrchange)
+     disp:drawXBM(3+offset, 0, 16, 16, eurosym)
+     disp:drawXBM(3+offset, 33, 16, 16, eurosym)
+     disp:drawXBM(25+offset, 0, 16, 16, btclogo)
+     disp:drawXBM(25+offset, 33, 16, 16, xmrlogo)
+end
+
+if (firstrun ~= 1) then
+    init_i2c_display()
+    firstrun = 1
+end
+
+function update_screen(delay)
+      disp:firstPage()
+      repeat
+           drawscreen()
+      until disp:nextPage() == false
+      tmr.wdclr()
+end
+
+update_screen()
+counter= counter + 1;
